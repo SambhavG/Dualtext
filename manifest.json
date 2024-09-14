@@ -29,5 +29,15 @@
         "content.js"
       ]
     }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "pinyin.json"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
   ]
 }
