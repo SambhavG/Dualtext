@@ -1,7 +1,7 @@
 console.log('Background script loaded');
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log('Received message in background:', request);
+  // console.log('Received message in background:', request);
   sendResponse({ success: true, data: request.text });
   // if (request.action === 'sendTextToAPI') {
   //   fetch('http://localhost:11434/api/generate', {
