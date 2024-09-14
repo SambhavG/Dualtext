@@ -1,6 +1,8 @@
 console.log('Chinese helper content script loaded');
 
 let pinyinLookup = {}
+let freqLookup = {}
+let defLookup = {}
 
 //the pinyin.json file has lines that look like this:
 // 吖=ā
@@ -22,7 +24,30 @@ function fillPinyinLookup() {
   });
 }
 
+//Each line of freq.txt is a tab separated line where first is rank and second is character
+function fillFreqLookup() {
+  fetch(chrome.runtime.getURL('freq.txt'))
+  .then(response => response.text())
+  .then(text => {
+    const lines = text.split('\n');
+    for (let line of lines) {
+      line = line.split('\t');
+      if (line && !(line[1] in freqLookup)) {
+        freqLookup[line[1]] = parseInt(line[0]);
+      }
+      if (line && !(line[1] in defLookup) && line.length > 5) {
+        defLookup[line[1]] = line[5].split('/')[0];
+      }
+    }
+    console.log('Frequency lookup table loaded');
+    //Print size of freqLookup
+    console.log(`Size of freqLookup: ${Object.keys(freqLookup).length}`);
+  });
+
+}
+
 fillPinyinLookup();
+fillFreqLookup();
 
 function sendTextToAPI(text, action) {
 
@@ -61,9 +86,6 @@ function processTextNodes(node) {
       const p1 = document.createElement('p');
       p1.textContent = node.textContent;
 
-      // const p2 = document.createElement('p');
-      // const p3 = document.createElement('p');
-
       const stacksContainer = document.createElement('div');
 
       chineseResponse.split('').forEach((char) => {
@@ -81,32 +103,42 @@ function processTextNodes(node) {
         }
         pinyinElement.style.margin = '0'; // Remove default margin
 
+        //Style the charElement and pinyinElement with a color based on freqLookup[char]
+        if (char in freqLookup) {
+          let freq = freqLookup[char];
+          if (freq <= 100) {
+            charElement.style.color = 'green';
+            pinyinElement.style.color = 'green';
+          } else if (freq <= 500) {
+            //light green
+            charElement.style.color = 'lightgreen';
+            pinyinElement.style.color = 'lightgreen';
+          }
+        }
+
+        const defElement = document.createElement('p');
+        if (char in defLookup) {
+          defElement.textContent = defLookup[char];
+        }
+        defElement.style.margin = '0'; // Remove default margin
+        //make italic
+        defElement.style.fontStyle = 'italic';
+        //make font size .5 em
+        defElement.style.fontSize = '.5em';
+
         charContainer.appendChild(charElement);
         charContainer.appendChild(pinyinElement);
+        charContainer.appendChild(defElement);
+        // charContainer.appendChild(freqElement);
         //Add right margin of 5px to each character
         charContainer.style.marginRight = '5px';
 
         stacksContainer.appendChild(charContainer);
       });
 
-      // Set the text content of each p element
-      // p2.textContent = chineseResponse;
-      // pinyinRespnose = "asdf";
-      // let pinyinResponse = chineseResponse.split('').map((char) => {
-      //   if (char in pinyinLookup) {
-      //     return " " + pinyinLookup[char] + " ";
-      //   }
-
-      //   return char;
-      // }).join('').replace('  ', ' ');
-
-      // p3.textContent = pinyinResponse;
-
       // Append the p elements to the div
       div.appendChild(p1);
       div.appendChild(stacksContainer);
-      // div.appendChild(p2);
-      // div.appendChild(p3);
 
       // Replace the text node with the new div
       const parent = node.parentNode;
