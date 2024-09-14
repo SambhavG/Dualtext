@@ -25,8 +25,9 @@ function fillPinyinLookup() {
 fillPinyinLookup();
 
 function sendTextToAPI(text, action) {
-  console.log(`Sending text to API with action ${action}:`, text);
+
   return new Promise((resolve, reject) => {
+
     chrome.runtime.sendMessage({ action: action, text: text }, response => {
       if (chrome.runtime.lastError) {
         console.error('Runtime error:', chrome.runtime.lastError.message);
@@ -51,26 +52,61 @@ function processTextNodes(node) {
   if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '' && node.textContent.length > 50 && num < 20) {  
     num++;
     Promise.all([
-      sendTextToAPI(node.textContent, 'pinyinTranslate'),
-      sendTextToAPI(node.textContent, 'sendTextToAPI')
+      sendTextToAPI(node.textContent, 'ChineseTranslate')
     ])
-    .then(([chineseResponse, pinyinResponse]) => {
+    .then(([chineseResponse]) => {
       // Create a new div element
       const div = document.createElement('div');
       // Create three p elements
       const p1 = document.createElement('p');
-      const p2 = document.createElement('p');
-      const p3 = document.createElement('p');
+      p1.textContent = node.textContent;
+
+      // const p2 = document.createElement('p');
+      // const p3 = document.createElement('p');
+
+      const stacksContainer = document.createElement('div');
+
+      chineseResponse.split('').forEach((char) => {
+        const charContainer = document.createElement('div');
+        charContainer.style.display = 'inline-block'; // Display inline-block to align characters in a line
+        charContainer.style.textAlign = 'center'; // Center align the text
+
+        const charElement = document.createElement('p');
+        charElement.textContent = char;
+        charElement.style.margin = '0'; // Remove default margin
+
+        const pinyinElement = document.createElement('p');
+        if (char in pinyinLookup) {
+          pinyinElement.textContent = pinyinLookup[char];
+        }
+        pinyinElement.style.margin = '0'; // Remove default margin
+
+        charContainer.appendChild(charElement);
+        charContainer.appendChild(pinyinElement);
+        //Add right margin of 5px to each character
+        charContainer.style.marginRight = '5px';
+
+        stacksContainer.appendChild(charContainer);
+      });
 
       // Set the text content of each p element
-      p1.textContent = node.textContent;
-      p2.textContent = chineseResponse;
-      p3.textContent = pinyinResponse;
+      // p2.textContent = chineseResponse;
+      // pinyinRespnose = "asdf";
+      // let pinyinResponse = chineseResponse.split('').map((char) => {
+      //   if (char in pinyinLookup) {
+      //     return " " + pinyinLookup[char] + " ";
+      //   }
+
+      //   return char;
+      // }).join('').replace('  ', ' ');
+
+      // p3.textContent = pinyinResponse;
 
       // Append the p elements to the div
       div.appendChild(p1);
-      div.appendChild(p2);
-      div.appendChild(p3);
+      div.appendChild(stacksContainer);
+      // div.appendChild(p2);
+      // div.appendChild(p3);
 
       // Replace the text node with the new div
       const parent = node.parentNode;
