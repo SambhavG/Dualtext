@@ -1,0 +1,33 @@
+{
+  "name": "Chinese helper",
+  "version": "1.0.0",
+  "description": "Learn Chinese by reading articles",
+  "manifest_version": 3,
+  "permissions": [
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://postman-echo.com/",
+    "http://localhost:11434/api/generate",
+    "http://localhost/*"
+  ],
+  "author": "Sambhav Gupta",
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "English to chinese"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ]
+    }
+  ]
+}
