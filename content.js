@@ -67,6 +67,27 @@ function sendTextToAPI(text, action) {
   });
 }
 
+function convertTextNodesToSentences(node) {
+  if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '') { 
+    const sentences = node.textContent.split(/(?<=[.!?])\s+/);
+    console.log(sentences);
+    if (sentences.length > 1) {
+      const parent = node.parentNode;
+      for (let i = 0; i < sentences.length; i++) {
+        const sentence = sentences[i];
+        const p = document.createElement('p');
+        p.textContent = sentence;
+        parent.insertBefore(p, node);
+      }
+      parent.removeChild(node);
+    }
+  } else if (node.nodeType === Node.ELEMENT_NODE) {
+    for (let child of node.childNodes) {
+      convertTextNodesToSentences(child);
+    }
+  }
+}
+
 let num = 0;
 function processTextNodes(node) {
   //Wait until the pinyinLookup table is filled
@@ -74,8 +95,10 @@ function processTextNodes(node) {
     setTimeout(() => processTextNodes(node), 200);
     return;
   }
-  if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '' && node.textContent.length > 50 && num < 20) {  
+  if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '' && node.textContent.length > 10 && num < 60) {  
     num++;
+
+
     Promise.all([
       sendTextToAPI(node.textContent, 'ChineseTranslate')
     ])
@@ -104,17 +127,43 @@ function processTextNodes(node) {
         pinyinElement.style.margin = '0'; // Remove default margin
 
         //Style the charElement and pinyinElement with a color based on freqLookup[char]
+        // if (char in freqLookup) {
+        //   let freq = freqLookup[char];
+        //   if (freq <= 100) {
+        //     charElement.style.color = 'green';
+        //     pinyinElement.style.color = 'green';
+        //   } else if (freq <= 500) {
+        //     //light green
+        //     charElement.style.color = 'lightgreen';
+        //     pinyinElement.style.color = 'lightgreen';
+        //   } else {
+        //     //red
+        //     charElement.style.color = 'gray';
+        //     pinyinElement.style.color = 'gray';
+        //   }
+        // }
+        
+        //Darkest green for freq 1, lighter to 500, where 500 becomes gray
         if (char in freqLookup) {
           let freq = freqLookup[char];
-          if (freq <= 100) {
-            charElement.style.color = 'green';
-            pinyinElement.style.color = 'green';
-          } else if (freq <= 500) {
-            //light green
-            charElement.style.color = 'lightgreen';
-            pinyinElement.style.color = 'lightgreen';
+          green = [0, 0, 0];
+          gray = [192, 192, 192];
+          color = [];
+          for (let i = 0; i < 3; i++) {
+            color[i] = Math.round(green[i] + (gray[i] - green[i]) * (freq / 500));
+            if (freq > 500) {
+              color[i] = gray[i];
+            }
+            
           }
+          if (freq <= 100) {
+            color = [0, 255, 0];
+          }
+          color = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+          charElement.style.color = color;
+          pinyinElement.style.color = color;
         }
+
 
         const defElement = document.createElement('p');
         if (char in defLookup) {
@@ -155,5 +204,6 @@ function processTextNodes(node) {
 
 window.addEventListener('load', () => {
   console.log('Processing text nodes');
+  convertTextNodesToSentences(document.body);
   processTextNodes(document.body);
 });
